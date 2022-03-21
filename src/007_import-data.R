@@ -26,7 +26,7 @@ con <- dbConnect(RPostgres::Postgres(),
   dbname = "bea-cukai",
   port = 5432,
   user = "dbmasteruser",
-  password = "O8Cl9L%J_m5L+AqcUBECI<N:yfu{`*VY"
+  password = "_____"
 )
 
 # Check list of tables
