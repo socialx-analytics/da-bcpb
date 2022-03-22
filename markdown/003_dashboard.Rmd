@@ -1,36 +1,105 @@
 ---
-title: "Dashboard"
+title: "Billing Report"
 output: 
   flexdashboard::flex_dashboard:
-    orientation: columns
-    vertical_layout: fill
+        orientation: rows
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
+# Load Packages
 library(flexdashboard)
+library(shiny)
+library(tidyverse)
+library(DBI)
+library(readxl)
+library(plotly)
+library(lubridate)
+
+# Set Parameter
+options(shiny.usecairo = T)
+options(scipen = 10000)
 ```
 
-Column {data-width=650}
------------------------------------------------------------------------
+```{r global, include=FALSE}
+# Import Data
+billing_terbit <- read_xlsx("data/billing_terbit_sample.xlsx")
 
-### Chart A
+pembayaran <- billing_terbit %>%
+  mutate(status_pembayaran = case_when(
+    !is.na(tgl_bayar) ~ "Sudah Bayar",
+    is.na(tgl_bayar) ~ "Belum Bayar"
+  )) %>%
+  group_by(status_pembayaran) %>%
+  summarise(total_pungutan = sum(total_pungutan))
+```
 
+Visualisasi
+=======================================================================
+
+### Trend Pungutan {data-width=650}
 ```{r}
+plot_trend_billing_terbit <- billing_terbit %>%
+  group_by(tgl_billing) %>%
+  summarise(total_pungutan = sum(total_pungutan)) %>%
+  ggplot(aes(x = tgl_billing, y = total_pungutan)) +
+  geom_line(color = "steelblue") +
+  labs(
+    x = "",
+    y = "Total Pungutan"
+  ) +
+  theme_minimal()
 
+ggplotly(plot_trend_billing_terbit)
 ```
 
-Column {data-width=350}
------------------------------------------------------------------------
-
-### Chart B
-
+### Jumlah Terbayar {data-width=350}
 ```{r}
+plot_jumlah_terbayar <- billing_terbit %>%
+  mutate(status_pembayaran = case_when(
+    !is.na(tgl_bayar) ~ "Sudah Bayar",
+    is.na(tgl_bayar) ~ "Belum Bayar"
+  )) %>%
+  group_by(status_pembayaran) %>%
+  summarise(total_pungutan = sum(total_pungutan)) %>%
+  ggplot(aes(x = status_pembayaran, y = total_pungutan, fill = status_pembayaran)) +
+  geom_col() +
+  labs(
+    x = "",
+    y = "Total Pungutan"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
 
+
+ggplotly(plot_jumlah_terbayar)
 ```
 
-### Chart C
+Data
+=======================================================================
 
+### {data-width=1000}
 ```{r}
-
+renderTable({
+  billing_terbit %>%
+    arrange(desc(tgl_billing)) %>%
+    select(kode_billing, tgl_billing, expired_billing, total_pungutan, total_dibayar) %>%
+    mutate_at(c("tgl_billing", "expired_billing"), as.character) %>%
+    mutate(total_pungutan = paste("Rp.", formatC(total_pungutan,
+      big.mark = ".",
+      format = "fg"
+    ))) %>%
+    mutate(total_dibayar = paste("Rp.", formatC(total_dibayar,
+      big.mark = ".",
+      format = "fg"
+    ))) %>%
+    rename(
+      `Kode Billing` = kode_billing,
+      `Tanggal Billing` = tgl_billing,
+      `Expired Billing` = expired_billing,
+      `Total Pungutan` = total_pungutan,
+      `Total Dibayar` = total_dibayar
+    ) %>%
+    head(20)
+})
 ```
-

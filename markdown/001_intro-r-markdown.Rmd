@@ -1,29 +1,70 @@
 ---
 title: "Introduction to R Markdown"
 author: "Muhammad Apriandito"
-output: html_document
+output:
+  html_document:
+    theme: paper
+    highlight: tango
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+  dev = "png",
+  dev.args = list(type = "cairo-png"),
+  fig.height = 5,
+  fig.width = 9,
+  tidy = "styler", tidy.opts = list(strict = FALSE),
+  fig.align = "center"
+)
+options(scipen = 10000)
+set.seed(1234)
 ```
 
-## R Markdown
+#### Ini adalah R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Ini adalah dokumen R Markdown. Tidak seperti R Script yang hanya berupa kodingan, di R Markdown kita dapat menuliskan keterangan seperti ini. Di dalam R Markdown, kode dituliskan pada area abu-abu yang disebut chunk. Chunk dapat dibuat dengan menekan tombol insert chunk atau menekan tombol ```ctrl + alt +i```
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+#### Load Packages
 
-```{r cars}
-summary(cars)
+Aktivasi packages yang dibutuhkan
+
+```{r message=FALSE, warning=FALSE}
+# Load Packages
+library(tidyverse)
+library(readxl)
 ```
 
-## Including Plots
+#### Import Data
+Import data dari Google Spreadsheet
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r message=FALSE, warning=FALSE}
+# Import Data
+billing_terbit <- read_xlsx("data/billing_terbit_sample.xlsx")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+# Menampilkan 10 Data Teratas
+head(billing_terbit, 10)
+```
+
+#### Visualisasi Data
+Menampilkan visualisasi data
+
+```{r}
+billing_terbit %>%
+  group_by(tgl_billing) %>%
+  summarise(total_pungutan = sum(total_pungutan)) %>%
+  ggplot(aes(x = tgl_billing, y = total_pungutan)) +
+  geom_line(color = "steelblue") +
+  labs(
+    title = "Trend Pungutan: Bea Cukai Pasar Baru",
+    subtitle = "Februari 2022",
+    x = "Tanggal Billing",
+    y = "Total Pungutan"
+  ) +
+  theme_minimal()
+```
+
+#### Rangkuman Dalam Bentuk Tulisan
+Total pungutan pada bulan Februari adalah `r paste("Rp.", formatC(sum(billing_terbit$total_pungutan), big.mark = ".", format = "fg" ))`
